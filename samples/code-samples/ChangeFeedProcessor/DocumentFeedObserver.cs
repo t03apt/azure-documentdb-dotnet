@@ -11,7 +11,7 @@
 // </copyright>
 //---------------------------------------------------------------------------------
 
-namespace ChangeFeedMigrationSample
+namespace ChangeFeedProcessor
 {
     using System;
     using System.Collections.Generic;
@@ -90,7 +90,7 @@ namespace ChangeFeedMigrationSample
             {
                 Console.ForegroundColor = ConsoleColor.Yellow;
                 Console.WriteLine(doc.Id.ToString());
-               
+
 
                 if (this.destinationCollectionUri != null)
                 {
