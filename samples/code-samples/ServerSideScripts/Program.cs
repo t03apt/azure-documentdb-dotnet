@@ -4,6 +4,7 @@
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Linq;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
     using System;
     using System.Collections.Generic;
     using System.Configuration;
@@ -25,7 +26,7 @@
 
         //Assign a id for your database & collection 
         private static readonly string DatabaseName = "samples";
-        private static readonly string CollectionName = "serversidejs-samples";
+        private static readonly string CollectionName = "serversidejs-sequence";
 
         //Read the DocumentDB endpointUrl and authorisationKeys from config
         //These values are available from the Azure Management Portal on the DocumentDB Account Blade under "Keys"
@@ -33,21 +34,20 @@
         private static readonly string EndpointUrl = ConfigurationManager.AppSettings["EndPointUrl"];
         private static readonly string AuthorizationKey = ConfigurationManager.AppSettings["AuthorizationKey"];
 
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             try
             {
                 using (client = new DocumentClient(new Uri(EndpointUrl), AuthorizationKey))
                 {
-                    RunDemoAsync(DatabaseName, CollectionName).Wait();
+                    await RunDemoAsync(DatabaseName, CollectionName);
                 }
             }
-#if !DEBUG
             catch (Exception e)
             {
+                Console.WriteLine(e);
                 LogException(e);
             }
-#endif
             finally
             {
                 Console.WriteLine("End of demo, press any key to exit.");
@@ -61,13 +61,14 @@
 
             DocumentCollection collectionDefinition = new DocumentCollection { Id = collectionId };
             collectionDefinition.IndexingPolicy = new IndexingPolicy(new RangeIndex(DataType.String) { Precision = -1 });
-            collectionDefinition.PartitionKey.Paths.Add("/LastName");
+            collectionDefinition.PartitionKey.Paths.Add("/partitionKey");
 
             DocumentCollection collection = await client.CreateDocumentCollectionIfNotExistsAsync(
                 UriFactory.CreateDatabaseUri(database.Id),
                 collectionDefinition,
                 new RequestOptions { OfferThroughput = 1000 });
 
+            /*
             //Run a simple script
             await RunSimpleScript(collection.SelfLink);
 
@@ -85,6 +86,10 @@
 
             // Run UDF
             await RunUDF(collection.SelfLink);
+            */
+
+            // Run GenerateSequence
+            await RunGenerateSequenceScript(collection.SelfLink);
 
             //// Uncomment to Cleanup
             //await client.DeleteDatabaseAsync(database.SelfLink);
@@ -374,6 +379,33 @@
                 aggregateEntry.MinSize, 
                 aggregateEntry.MaxSize, 
                 aggregateEntry.TotalSize);
+        }
+
+        private static async Task RunGenerateSequenceScript(string collectionLink)
+        {
+            // 1. Create stored procedure for script.
+            string scriptFileName = @"js\GenerateSequence.js";
+            string scriptId = Path.GetFileNameWithoutExtension(scriptFileName);
+
+            var sproc = new StoredProcedure
+            {
+                Id = scriptId,
+                Body = File.ReadAllText(scriptFileName)
+            };
+
+            await TryDeleteStoredProcedure(collectionLink, sproc.Id);
+
+            sproc = await client.CreateStoredProcedureAsync(collectionLink, sproc);
+
+            var partitionKey = DateTimeOffset.UtcNow.ToString("yyyy-MM-dd");
+            var response = await client.ExecuteStoredProcedureAsync<JObject>(
+                sproc.SelfLink,
+                new RequestOptions { PartitionKey = new PartitionKey(partitionKey) },
+                partitionKey,
+                partitionKey,
+                100);
+
+            Console.WriteLine("Result from script: {0}\r\n", response.Response);
         }
 
         public class LoggingEntry
