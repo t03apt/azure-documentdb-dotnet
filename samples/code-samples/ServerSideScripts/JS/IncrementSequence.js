@@ -62,23 +62,17 @@
     }
 
     const incrementSequence = function (error, documents, responseOptions) {
-        let element = null;
         if (error) {
-            throw new Error('Increment error ' + error.message);
+            throw new Error(JSON.stringify(error));
         }
 
-        if (!documents || !documents.length) {
-            element = createNewSequence();
-        } else {
-            element = documents[0];
-        }
-
+        const element = (!documents || !documents.length) ? createNewSequence() : documents[0];
+        element.modificationDate = new Date();
         element.currentValue += increment;
         if (element.currentValue > maxValue) {
             element.currentValue = minValue + increment;
         }
 
-        element.modificationDate = new Date();
         save(element);
     }
 
@@ -90,8 +84,4 @@ AND s.documentType = '${documentType}'
 AND s.name = '${sequenceName}'`,
         {},
         incrementSequence);
-
-    if (!query) {
-        return;
-    }
 } 
