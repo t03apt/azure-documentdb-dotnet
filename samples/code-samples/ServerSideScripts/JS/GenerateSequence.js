@@ -15,11 +15,11 @@
         throw new Error(`count needs to be an integer. Value:${count}`);
     }
 
-    let context = getContext();
-    let $ = context.getCollection();
-    let documentType = 'Sequence';
+    const context = getContext();
+    const $ = context.getCollection();
+    const documentType = 'Sequence';
 
-    let createNewSequence = function () {
+    const createNewSequence = function () {
         return {
             documentType: documentType,
             name: sequenceName,
@@ -31,7 +31,7 @@
         }
     }
 
-    let saveCallback = function (element) {
+    const saveCallback = function (element) {
         return function (error, resource, responseHeaders) {
             if (error) {
                 throw new Error(JSON.stringify(error));
@@ -41,7 +41,7 @@
         }
     }
 
-    let save = function (element) {
+    const save = function (element) {
         $.upsertDocument(
             $.getSelfLink(),
             element,
@@ -51,7 +51,7 @@
             saveCallback(element));
     }
 
-    let increment = function (error, documents, responseOptions) {
+    const increment = function (error, documents, responseOptions) {
         var element = null;
         if (error) {
             throw new Error('Increment error ' + error.message);
@@ -68,7 +68,7 @@
         save(element);
     }
 
-    let query = $.queryDocuments(
+    const query = $.queryDocuments(
         $.getSelfLink(),
         `SELECT * FROM sequences s 
 WHERE s.partitionKey = '${partitionKey}'
