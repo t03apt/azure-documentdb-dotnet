@@ -420,6 +420,7 @@
                    )
                 {
                     Console.WriteLine("Optimistic Concurrency error.");
+                    return;
                 }
 
                 throw;

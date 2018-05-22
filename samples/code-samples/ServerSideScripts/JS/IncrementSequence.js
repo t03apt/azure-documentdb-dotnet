@@ -31,6 +31,10 @@
     const $ = context.getCollection();
     const documentType = 'Sequence';
 
+    const throwError = function (error) {
+        throw new Error(JSON.stringify(error));
+    }
+
     const createNewSequence = function () {
         return {
             documentType: documentType,
@@ -44,7 +48,7 @@
     const saveCallback = function (element) {
         return function (error, resource, responseHeaders) {
             if (error) {
-                throw new Error(JSON.stringify(error));
+                throwError(error);
             }
 
             context.getResponse().setBody(element);
@@ -63,7 +67,7 @@
 
     const incrementSequence = function (error, documents, responseOptions) {
         if (error) {
-            throw new Error(JSON.stringify(error));
+            throwError(error);
         }
 
         const element = (!documents || !documents.length) ? createNewSequence() : documents[0];
