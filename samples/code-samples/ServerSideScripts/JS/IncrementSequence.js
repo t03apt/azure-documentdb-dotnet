@@ -1,18 +1,30 @@
-﻿function Next(partitionKey, sequenceName, count) {
-    if (!partitionKey) {
-        throw new Error(`partitionKey is invalid. Value:${partitionKey}`);
+﻿function Next(partitionKey, sequenceName, increment, minValue, maxValue) {
+    const assertHasValue = function (value, name) {
+        if (!value) {
+            throw new Error(`${name} is invalid. Value:${value}`);
+        }
     }
 
-    if (!sequenceName) {
-        throw new Error(`sequenceName is invalid. Value:${sequenceName}`);
+    const assertIsNumber = function (value, name) {
+        assertHasValue(value, name);
+
+        if (!Number.isInteger(value)) {
+            throw new Error(`${name} needs to be an integer. Value:${value}`);
+        }
     }
 
-    if (!count) {
-        throw new Error(`count is invalid. Value:${count}`);
+    assertHasValue(partitionKey, 'partitionKey');
+    assertHasValue(sequenceName, 'sequenceName');
+    assertIsNumber(increment, 'increment');
+    assertIsNumber(minValue, 'minValue');
+    assertIsNumber(maxValue, 'maxValue');
+
+    if (minValue >= maxValue) {
+        throw new Error(`maxValue needs to be greater than minValue. minValue:${minValue}, maxValue:${maxValue}`);
     }
 
-    if (!Number.isInteger(count)) {
-        throw new Error(`count needs to be an integer. Value:${count}`);
+    if (!(minValue + increment <= maxValue)) {
+        throw new Error(`minValue plus increment needs to be less than maxValue. minValue:${minValue}, increment:${increment}, maxValue:${maxValue}`);
     }
 
     const context = getContext();
@@ -24,10 +36,8 @@
             documentType: documentType,
             name: sequenceName,
             partitionKey: partitionKey,
-            startValue: 0,
-            currentValue: 0,
             creationDate: new Date(),
-            modificationDate: new Date()
+            currentValue: minValue
         }
     }
 
@@ -51,8 +61,8 @@
             saveCallback(element));
     }
 
-    const increment = function (error, documents, responseOptions) {
-        var element = null;
+    const incrementSequence = function (error, documents, responseOptions) {
+        let element = null;
         if (error) {
             throw new Error('Increment error ' + error.message);
         }
@@ -63,7 +73,11 @@
             element = documents[0];
         }
 
-        element.currentValue += count;
+        element.currentValue += increment;
+        if (element.currentValue > maxValue) {
+            element.currentValue = minValue + increment;
+        }
+
         element.modificationDate = new Date();
         save(element);
     }
@@ -75,7 +89,7 @@ WHERE s.partitionKey = '${partitionKey}'
 AND s.documentType = '${documentType}'
 AND s.name = '${sequenceName}'`,
         {},
-        increment);
+        incrementSequence);
 
     if (!query) {
         return;

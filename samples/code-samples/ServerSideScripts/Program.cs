@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.Configuration;
+    using System.Dynamic;
     using System.Globalization;
     using System.IO;
     using System.Linq;
@@ -400,12 +401,7 @@
             try
             {
                 var partitionKey = DateTimeOffset.UtcNow.ToString("yyyy-MM-dd");
-                var response = await client.ExecuteStoredProcedureAsync<JObject>(
-                    sproc.SelfLink,
-                    new RequestOptions { PartitionKey = new PartitionKey(partitionKey) },
-                    partitionKey,
-                    partitionKey,
-                    100);
+                StoredProcedureResponse<JObject> response = await ExecuteIncrementSequence(sproc, partitionKey);
 
                 Console.WriteLine("Result from script: {0}\r\n", response.Response);
             }
@@ -423,7 +419,29 @@
 
                 throw;
             }
+        }
 
+        private static async Task<StoredProcedureResponse<JObject>> ExecuteIncrementSequence(StoredProcedure sproc, string partitionKey)
+        {
+            var options = CreateIncrementSequenceParams(partitionKey, partitionKey, 100, 1, 999999);
+            return await client.ExecuteStoredProcedureAsync<JObject>(
+                sproc.SelfLink,
+                new RequestOptions { PartitionKey = new PartitionKey(partitionKey) },
+                options);
+        }
+
+        private static dynamic[] CreateIncrementSequenceParams(string partitionKey, string sequenceName, int increment, int minValue, int maxValue)
+        {
+            var result = new dynamic[]
+            {
+                partitionKey,
+                sequenceName,
+                increment,
+                minValue,
+                maxValue
+            };
+            
+            return result;
         }
 
         public class LoggingEntry
