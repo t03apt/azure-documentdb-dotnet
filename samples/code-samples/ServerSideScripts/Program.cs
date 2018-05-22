@@ -3,7 +3,6 @@
     using System;
     using System.Collections.Generic;
     using System.Configuration;
-    using System.Dynamic;
     using System.Globalization;
     using System.IO;
     using System.Linq;
@@ -401,7 +400,13 @@
             try
             {
                 var partitionKey = DateTimeOffset.UtcNow.ToString("yyyy-MM-dd");
-                StoredProcedureResponse<JObject> response = await ExecuteIncrementSequence(sproc, partitionKey);
+                StoredProcedureResponse<JObject> response = await ExecuteIncrementSequence(
+                    sproc,
+                    partitionKey: partitionKey,
+                    sequenceName: partitionKey,
+                    increment: 100,
+                    minValue: 1,
+                    maxValue: 999999);
 
                 Console.WriteLine("Result from script: {0}\r\n", response.Response);
             }
@@ -421,27 +426,27 @@
             }
         }
 
-        private static async Task<StoredProcedureResponse<JObject>> ExecuteIncrementSequence(StoredProcedure sproc, string partitionKey)
+        private static async Task<StoredProcedureResponse<JObject>> ExecuteIncrementSequence(StoredProcedure sproc, string partitionKey, string sequenceName, int increment, int minValue, int maxValue)
         {
-            var options = CreateIncrementSequenceParams(partitionKey, partitionKey, 100, 1, 999999);
+            var options = CreateIncrementSequenceParams();
             return await client.ExecuteStoredProcedureAsync<JObject>(
                 sproc.SelfLink,
                 new RequestOptions { PartitionKey = new PartitionKey(partitionKey) },
                 options);
-        }
 
-        private static dynamic[] CreateIncrementSequenceParams(string partitionKey, string sequenceName, int increment, int minValue, int maxValue)
-        {
-            var result = new dynamic[]
+            dynamic[] CreateIncrementSequenceParams()
             {
-                partitionKey,
-                sequenceName,
-                increment,
-                minValue,
-                maxValue
-            };
-            
-            return result;
+                var result = new dynamic[]
+                {
+                    partitionKey,
+                    sequenceName,
+                    increment,
+                    minValue,
+                    maxValue
+                };
+
+                return result;
+            }
         }
 
         public class LoggingEntry
