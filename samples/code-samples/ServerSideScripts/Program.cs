@@ -414,6 +414,7 @@
                 if (
                     ex.StatusCode == HttpStatusCode.PreconditionFailed ||
                     // https://github.com/Azure/azure-documentdb-dotnet/issues/348
+                    // https://peter.intheazuresky.com/2016/12/22/documentdb-optimistic-concurrency-in-a-stored-procedure/
                     ex.StatusCode == HttpStatusCode.BadRequest && ex.Message.Contains("One of the specified pre-condition is not met")
                    )
                 {
