@@ -1,18 +1,18 @@
 ﻿namespace DocumentDB.Samples.Queries
 {
-    using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Client;
-    using Microsoft.Azure.Documents.Linq;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
     using System;
     using System.Collections.Generic;
     using System.Configuration;
     using System.Globalization;
     using System.IO;
     using System.Linq;
+    using System.Net;
     using System.Text;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Client;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
 
     //------------------------------------------------------------------------------------------------
@@ -128,7 +128,7 @@
             // 3. Run the script. Pass "Hello, " as parameter. 
             // The script will take the 1st document and echo: Hello, <document as json>.
             var response = await client.ExecuteStoredProcedureAsync<string>(
-                sproc.SelfLink, 
+                sproc.SelfLink,
                 new RequestOptions { PartitionKey = new PartitionKey("Estel") },
                 "Hello, ");
 
@@ -136,7 +136,7 @@
 
             await client.DeleteDocumentAsync(created.SelfLink, new RequestOptions { PartitionKey = new PartitionKey("Estel") });
         }
-        
+
         /// <summary>
         /// Import many documents using stored procedure.
         /// </summary>
@@ -196,7 +196,7 @@
 
             // 8. Validate
             int numDocs = 0;
-            string continuation = string.Empty;            
+            string continuation = string.Empty;
             do
             {
                 // Read document feed and count the number of documents.
@@ -218,10 +218,10 @@
         {
             // 1. Create or get the stored procedure.
             string body = File.ReadAllText(@"js\OrderBy.js");
-            StoredProcedure sproc = new StoredProcedure 
-            { 
-                Id = "OrderBy", 
-                Body = body 
+            StoredProcedure sproc = new StoredProcedure
+            {
+                Id = "OrderBy",
+                Body = body
             };
 
             await TryDeleteStoredProcedure(collectionLink, sproc.Id);
@@ -240,8 +240,8 @@
                 var response = await client.ExecuteStoredProcedureAsync<OrderByResult>(
                     sproc.SelfLink,
                     new RequestOptions { PartitionKey = new PartitionKey("Andersen") },
-                    filterQuery, 
-                    orderByFieldName, 
+                    filterQuery,
+                    orderByFieldName,
                     continuationToken);
 
                 // 4. Process stored procedure response.
@@ -268,7 +268,7 @@
             string body = File.ReadAllText(@"JS\CanonicalizeSchedule.js");
             Trigger trigger = new Trigger
             {
-                Id =  triggerId,
+                Id = triggerId,
                 Body = body,
                 TriggerOperation = TriggerOperation.Create,
                 TriggerType = TriggerType.Pre
@@ -279,38 +279,38 @@
 
             // 2. Create a few documents with the trigger.
             var requestOptions = new RequestOptions { PreTriggerInclude = new List<string> { triggerId } };
-            
-            await client.CreateDocumentAsync(collectionLink, new 
-                {
-                    type = "Schedule",
-                    name = "Music",
-                    weekday = "mon",
-                    startTime = DateTime.Parse("18:00", CultureInfo.InvariantCulture),
-                    endTime = DateTime.Parse("19:00", CultureInfo.InvariantCulture)
-                }, requestOptions);
 
-            await client.CreateDocumentAsync(collectionLink, new 
-                {
-                    type = "Schedule",
-                    name = "Judo",
-                    weekday = "tues",
-                    startTime = DateTime.Parse("17:30", CultureInfo.InvariantCulture),
-                    endTime = DateTime.Parse("19:00", CultureInfo.InvariantCulture)
-                }, requestOptions);
+            await client.CreateDocumentAsync(collectionLink, new
+            {
+                type = "Schedule",
+                name = "Music",
+                weekday = "mon",
+                startTime = DateTime.Parse("18:00", CultureInfo.InvariantCulture),
+                endTime = DateTime.Parse("19:00", CultureInfo.InvariantCulture)
+            }, requestOptions);
 
-            await client.CreateDocumentAsync(collectionLink, new 
-                {
-                    type = "Schedule",
-                    name = "Swimming",
-                    weekday = "FRIDAY",
-                    startTime = DateTime.Parse("19:00", CultureInfo.InvariantCulture),
-                    endTime = DateTime.Parse("20:00", CultureInfo.InvariantCulture)
-                }, requestOptions);
+            await client.CreateDocumentAsync(collectionLink, new
+            {
+                type = "Schedule",
+                name = "Judo",
+                weekday = "tues",
+                startTime = DateTime.Parse("17:30", CultureInfo.InvariantCulture),
+                endTime = DateTime.Parse("19:00", CultureInfo.InvariantCulture)
+            }, requestOptions);
+
+            await client.CreateDocumentAsync(collectionLink, new
+            {
+                type = "Schedule",
+                name = "Swimming",
+                weekday = "FRIDAY",
+                startTime = DateTime.Parse("19:00", CultureInfo.InvariantCulture),
+                endTime = DateTime.Parse("20:00", CultureInfo.InvariantCulture)
+            }, requestOptions);
 
             // 3. Read the documents from the store. 
             var results = client.CreateDocumentQuery<Document>(
-                collectionLink, 
-                "SELECT * FROM root r WHERE r.type='Schedule'", 
+                collectionLink,
+                "SELECT * FROM root r WHERE r.type='Schedule'",
                 new FeedOptions { EnableCrossPartitionQuery = true });
 
             // 4. Prints the results: see what the trigger did.
@@ -356,12 +356,12 @@
                 DeviceId = "Device001"
             };
 
-            await client.CreateDocumentAsync(collectionLink, aggregateEntry); 
-            
+            await client.CreateDocumentAsync(collectionLink, aggregateEntry);
+
             // 3. Import a number of docs with trigger. Use client API this time, we already have sample fot using script.
             var requestOptions = new RequestOptions { PostTriggerInclude = new List<string> { triggerId } };
 
-            for (int i=0; i < 4; i++)
+            for (int i = 0; i < 4; i++)
             {
                 await client.CreateDocumentAsync(
                     collectionLink,
@@ -371,13 +371,13 @@
 
             // 4. Print aggregate info from the metadata document.
             aggregateEntry = client.CreateDocumentQuery<dynamic>(
-                collectionLink, 
+                collectionLink,
                 "SELECT * FROM root r WHERE r.isMetadata = true",
                 new FeedOptions { PartitionKey = new PartitionKey("Device001") }).AsEnumerable().First();
 
-            Console.WriteLine("Document statistics: min size: {0}, max size: {1}, total size: {2}", 
-                aggregateEntry.MinSize, 
-                aggregateEntry.MaxSize, 
+            Console.WriteLine("Document statistics: min size: {0}, max size: {1}, total size: {2}",
+                aggregateEntry.MinSize,
+                aggregateEntry.MaxSize,
                 aggregateEntry.TotalSize);
         }
 
@@ -397,15 +397,32 @@
 
             sproc = await client.CreateStoredProcedureAsync(collectionLink, sproc);
 
-            var partitionKey = DateTimeOffset.UtcNow.ToString("yyyy-MM-dd");
-            var response = await client.ExecuteStoredProcedureAsync<JObject>(
-                sproc.SelfLink,
-                new RequestOptions { PartitionKey = new PartitionKey(partitionKey) },
-                partitionKey,
-                partitionKey,
-                100);
+            try
+            {
+                var partitionKey = DateTimeOffset.UtcNow.ToString("yyyy-MM-dd");
+                var response = await client.ExecuteStoredProcedureAsync<JObject>(
+                    sproc.SelfLink,
+                    new RequestOptions { PartitionKey = new PartitionKey(partitionKey) },
+                    partitionKey,
+                    partitionKey,
+                    100);
 
-            Console.WriteLine("Result from script: {0}\r\n", response.Response);
+                Console.WriteLine("Result from script: {0}\r\n", response.Response);
+            }
+            catch (DocumentClientException ex)
+            {
+                if (
+                    ex.StatusCode == HttpStatusCode.PreconditionFailed ||
+                    // https://github.com/Azure/azure-documentdb-dotnet/issues/348
+                    ex.StatusCode == HttpStatusCode.BadRequest && ex.Message.Contains("One of the specified pre-condition is not met")
+                   )
+                {
+                    Console.WriteLine("Optimistic Concurrency error.");
+                }
+
+                throw;
+            }
+
         }
 
         public class LoggingEntry
@@ -442,7 +459,7 @@
         {
             // 1. Create UDF.
             var udfFileName = @"JS\Tax.js";
-            var udfId = Path.GetFileNameWithoutExtension(udfFileName); 
+            var udfId = Path.GetFileNameWithoutExtension(udfFileName);
             var udf = new UserDefinedFunction
             {
                 Id = udfId,
@@ -458,9 +475,9 @@
                 type = "Company",
                 name = "Zucker",
                 headquarters = "Germany",
-                locations = new [] 
-                { 
-                    new {country = "Germany", city = "Berlin"}, 
+                locations = new[]
+                {
+                    new {country = "Germany", city = "Berlin"},
                     new {country = "Russia", city = "Novosibirsk"}
                 },
                 income = 50000
@@ -471,9 +488,9 @@
                 type = "Company",
                 name = "Estel",
                 headquarters = "Russia",
-                locations = new[] 
-                { 
-                    new {country = "Russia", city = "Novosibirsk"}, 
+                locations = new[]
+                {
+                    new {country = "Russia", city = "Novosibirsk"},
                     new {country = "Germany", city = "Berlin"}
                 },
                 income = 70000
@@ -484,8 +501,8 @@
                 type = "Company",
                 name = "Pyramid",
                 headquarters = "USA",
-                locations = new[] 
-                { 
+                locations = new[]
+                {
                     new {country = "USA", city = "Seattle"}
                 },
                 income = 100000
@@ -568,7 +585,7 @@
                 await client.DeleteStoredProcedureAsync(sproc.SelfLink);
             }
         }
-        
+
         /// <summary>
         /// If a UDF is found on the DocumentCollection for the Id supplied it is deleted
         /// </summary>
@@ -583,7 +600,7 @@
                 await client.DeleteUserDefinedFunctionAsync(udf.SelfLink);
             }
         }
-        
+
         /// <summary>
         /// Log exception error message to the console
         /// </summary>

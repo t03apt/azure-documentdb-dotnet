@@ -34,7 +34,7 @@
     let saveCallback = function (element) {
         return function (error, resource, responseHeaders) {
             if (error) {
-                throw new Error(`Save error ${error}`);
+                throw new Error(JSON.stringify(error));
             }
 
             context.getResponse().setBody(element);
@@ -45,7 +45,9 @@
         $.upsertDocument(
             $.getSelfLink(),
             element,
-            {},
+            { 
+                etag: element._etag 
+            },
             saveCallback(element));
     }
 
