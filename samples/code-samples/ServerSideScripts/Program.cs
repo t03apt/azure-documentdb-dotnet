@@ -384,7 +384,7 @@
         private static async Task RunGenerateSequenceScript(string collectionLink)
         {
             // 1. Create stored procedure for script.
-            string scriptFileName = @"js\GenerateSequence.js";
+            string scriptFileName = @"js\IncrementSequence.js";
             string scriptId = Path.GetFileNameWithoutExtension(scriptFileName);
 
             var sproc = new StoredProcedure
